@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Data Penjualan Diterima - Dunia E-Bike</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #1e90ff, #f1c40f);
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      position: relative;
+      --wm-text: "DUNIA E-BIKE ";
+    }
+    body::before {
+      content: var(--wm-text) var(--wm-text) var(--wm-text) var(--wm-text);
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 200%;
+      height: 200%;
+      font-family: Arial, sans-serif;
+      font-weight: bold;
+      font-size: 28px;
+      color: rgba(255,255,255,0.15);
+      transform: rotate(-30deg);
+      pointer-events: none;
+      z-index: 0;
+      display: flex;
+      flex-wrap: wrap;
+      align-content: space-between;
+    }
+    .container {
+      background: #fff;
+      padding: 20px 24px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+      width: 100%;
+      max-width: 760px;
+      margin:40px 20px;
+      z-index: 1;
+    }
+    h2 { text-align:center; color:#1e90ff; margin-bottom:12px; }
+    .data-item { margin:8px 0; padding:10px; border-bottom:1px solid #eee; display:flex; gap:10px; align-items:flex-start; }
+    .label { width:160px; font-weight:bold; color:#333; }
+    .value { flex:1; color:#555; word-wrap:break-word; }
+    .toolbar { display:flex; gap:10px; justify-content:center; margin-top:16px; flex-wrap:wrap; }
+    .action-btn{
+      padding: 10px 14px;
+      margin: 5px;
+      border:none;
+      border-radius:8px;
+      cursor:pointer;
+      font-size:14px;
+      background:#1e90ff;
+      color:#fff;
+      box-shadow:0 2px 6px rgba(0,0,0,0.15);
+    }
+    .action-btn.alt{ background:#f39c12; }
+    table.rekap { width:100%; border-collapse: collapse; margin-top:12px; }
+    table.rekap th, table.rekap td { border:1px solid #ddd; padding:8px; text-align:left; font-size:13px; }
+    .small { font-size:12px; color:#666; }
+  </style>
+</head>
+<body>
+  <div class="container" id="print-area">
+    <h2>Data Penjualan Diterima</h2>
+    <div id="output"></div>
+
+    <div class="toolbar">
+      <button class="action-btn" onclick="exportPDF()">Export PDF</button>
+      <button class="action-btn" onclick="exportExcel()">Export Excel (.xlsx)</button>
+      <button class="action-btn alt" onclick="downloadRekap()">Download Rekap Semua</button>
+      <button class="action-btn alt" onclick="clearHistory()">Hapus Riwayat</button>
+    </div>
+
+    <h3 class="small" style="margin-top:18px;">Rekap Riwayat (tersimpan di browser)</h3>
+    <div id="rekapContainer"></div>
+  </div>
+
+  <!-- libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.min.js"></script>
+
+  <script>
+    // Parse params and display
+    const params = new URLSearchParams(window.location.search);
+    const output = document.getElementById("output");
+    const dataObj = {};
+    params.forEach((value, key) => dataObj[key] = decodeURIComponent(value));
+
+    // Display fields in order
+    const fields = [
+      {k:'nama_toko', l:'Nama Toko Cabang'},
+      {k:'telepon', l:'Nomor Telepon'},
+      {k:'type_sepeda', l:'Type Sepeda'},
+      {k:'sn', l:'Serial Number (SN)'},
+      {k:'nik', l:'NIK'},
+      {k:'harga', l:'Harga'},
+      {k:'alamat', l:'Alamat'},
+      {k:'penjual', l:'Penjual'},
+      {k:'penyeting', l:'Penyeting'}
+    ];
+
+    fields.forEach(f=>{
+      const div = document.createElement('div');
+      div.className = 'data-item';
+      const lab = document.createElement('div'); lab.className='label'; lab.textContent = f.l;
+      const val = document.createElement('div'); val.className='value'; val.textContent = dataObj[f.k] || '-';
+      div.appendChild(lab); div.appendChild(val);
+      output.appendChild(div);
+    });
+
+    // Rekap list: save to localStorage
+    const history = JSON.parse(localStorage.getItem('rekap_penjualan') || '[]');
+    history.push(dataObj);
+    localStorage.setItem('rekap_penjualan', JSON.stringify(history));
+
+    // Show rekap table
+    function renderRekap(){
+      const list = JSON.parse(localStorage.getItem('rekap_penjualan') || '[]');
+      if(list.length === 0){
+        document.getElementById('rekapContainer').innerHTML = '<p class="small">Belum ada riwayat.</p>';
+        return;
+      }
+      let html = '<table class="rekap"><thead><tr><th>#</th><th>SN</th><th>Nama Toko</th><th>Type</th><th>Harga</th><th>Tanggal</th></tr></thead><tbody>';
+      list.forEach((r,i)=>{
+        const date = r.savedAt || '-';
+        html += `<tr><td>${i+1}</td><td>${r.sn||'-'}</td><td>${r.nama_toko||'-'}</td><td>${r.type_sepeda||'-'}</td><td>${r.harga||'-'}</td><td>${date}</td></tr>`;
+      });
+      html += '</tbody></table>';
+      document.getElementById('rekapContainer').innerHTML = html;
+    }
+    renderRekap();
+
+    function getFileName(){
+      const sn = dataObj.sn || 'no-sn';
+      const date = new Date().toISOString().slice(0,10);
+      return `data-${sn}-${date}`;
+    }
+
+    function exportPDF(){
+      const element = document.getElementById('print-area');
+      html2pdf().from(element).save(getFileName()+'.pdf');
+    }
+
+    function exportExcel(){
+      // export current record only as single-row workbook
+      const ws = XLSX.utils.json_to_sheet([dataObj]);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Data');
+      XLSX.writeFile(wb, getFileName()+'.xlsx');
+    }
+
+    function downloadRekap(){
+      const list = JSON.parse(localStorage.getItem('rekap_penjualan') || '[]');
+      if(list.length === 0){ alert('Belum ada data rekap.'); return; }
+      const ws = XLSX.utils.json_to_sheet(list);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Rekap');
+      XLSX.writeFile(wb, 'rekap-penjualan-'+new Date().toISOString().slice(0,10)+'.xlsx');
+    }
+
+    function clearHistory(){
+      if(confirm('Hapus semua riwayat penjualan dari browser?')) {
+        localStorage.removeItem('rekap_penjualan');
+        renderRekap();
+        alert('Riwayat dihapus.');
+      }
+    }
+  </script>
+</body>
+</html>

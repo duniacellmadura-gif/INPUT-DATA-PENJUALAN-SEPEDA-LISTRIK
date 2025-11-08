@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Input Data Penjualan - Dunia E-Bike</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #1e90ff, #f1c40f);
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      position: relative;
+      --wm-text: "DUNIA E-BIKE ";
+    }
+    body::before {
+      content: var(--wm-text) var(--wm-text) var(--wm-text) var(--wm-text);
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 200%;
+      height: 200%;
+      font-family: Arial, sans-serif;
+      font-weight: bold;
+      font-size: 28px;
+      color: rgba(255,255,255,0.15);
+      transform: rotate(-30deg);
+      pointer-events: none;
+      z-index: 0;
+      display: flex;
+      flex-wrap: wrap;
+      align-content: space-between;
+    }
+    .container {
+      background: #fff;
+      padding: 20px 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+      width: 100%;
+      max-width: 560px;
+      z-index: 1;
+    }
+    h2 {
+      text-align: center;
+      color: #1e90ff;
+      margin-bottom: 18px;
+    }
+    label {
+      font-weight: bold;
+      margin-top: 10px;
+      display: block;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      box-sizing: border-box;
+    }
+    .row {
+      display: flex;
+      gap: 10px;
+    }
+    .row > div { flex: 1; }
+    .action-row { margin-top: 16px; display:flex; gap:10px; }
+    .btn {
+      padding: 12px 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 15px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+    }
+    .btn-primary { background:#1e90ff; color:#fff; flex:1; }
+    .btn-secondary { background:#f39c12; color:#fff; }
+    @media (max-width:600px){
+      .row{ flex-direction:column; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Form Input Penjualan Sepeda Listrik</h2>
+    <form id="salesForm" action="receiver-penjualan.html" method="GET" onsubmit="return saveDraft();">
+      <label>Nama Toko Cabang</label>
+      <input type="text" name="nama_toko" id="nama_toko" required />
+
+      <label>Nomor Telepon</label>
+      <input type="tel" name="telepon" id="telepon" required />
+
+      <label>Type Sepeda</label>
+      <input type="text" name="type_sepeda" id="type_sepeda" required />
+
+      <div class="row">
+        <div>
+          <label>Serial Number (SN)</label>
+          <input type="text" name="sn" id="sn" required />
+        </div>
+        <div>
+          <label>NIK</label>
+          <input type="text" name="nik" id="nik" required />
+        </div>
+      </div>
+
+      <label>Harga</label>
+      <input type="number" name="harga" id="harga" required />
+
+      <label>Alamat</label>
+      <textarea name="alamat" id="alamat" rows="3" required></textarea>
+
+      <div class="row">
+        <div>
+          <label>Penjual</label>
+          <input type="text" name="penjual" id="penjual" required />
+        </div>
+        <div>
+          <label>Penyeting</label>
+          <input type="text" name="penyeting" id="penyeting" required />
+        </div>
+      </div>
+
+      <div class="action-row">
+        <button type="submit" class="btn btn-primary">Kirim</button>
+        <button type="button" class="btn btn-secondary" onclick="saveLocal()">Simpan Draft</button>
+      </div>
+    </form>
+    <p style="text-align:center; margin-top:12px; font-size:13px; color:#555;">
+      Data akan dikirim ke halaman penerima (receiver-penjualan.html). Gunakan tombol <strong>Simpan Draft</strong> untuk menyimpan sementara di browser.
+    </p>
+  </div>
+
+  <script>
+    // Simple draft save to localStorage
+    function saveLocal(){
+      const data = {
+        nama_toko: document.getElementById('nama_toko').value,
+        telepon: document.getElementById('telepon').value,
+        type_sepeda: document.getElementById('type_sepeda').value,
+        sn: document.getElementById('sn').value,
+        nik: document.getElementById('nik').value,
+        harga: document.getElementById('harga').value,
+        alamat: document.getElementById('alamat').value,
+        penjual: document.getElementById('penjual').value,
+        penyeting: document.getElementById('penyeting').value,
+        savedAt: new Date().toISOString()
+      };
+      localStorage.setItem('draft_penjualan', JSON.stringify(data));
+      alert('Draft disimpan di browser.');
+    }
+
+    // Load draft if present
+    (function(){
+      const draft = JSON.parse(localStorage.getItem('draft_penjualan') || 'null');
+      if(draft){
+        if(confirm('Terdapat draft tersimpan. Mau muat ke form?')) {
+          document.getElementById('nama_toko').value = draft.nama_toko || '';
+          document.getElementById('telepon').value = draft.telepon || '';
+          document.getElementById('type_sepeda').value = draft.type_sepeda || '';
+          document.getElementById('sn').value = draft.sn || '';
+          document.getElementById('nik').value = draft.nik || '';
+          document.getElementById('harga').value = draft.harga || '';
+          document.getElementById('alamat').value = draft.alamat || '';
+          document.getElementById('penjual').value = draft.penjual || '';
+          document.getElementById('penyeting').value = draft.penyeting || '';
+        }
+      }
+    })();
+
+    // Save draft before navigate (optional)
+    function saveDraft(){
+      // keep behavior minimal; let normal submit proceed
+      return true;
+    }
+  </script>
+</body>
+</html>
